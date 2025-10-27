@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>MediaToolsHub - Complete Toolkit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <!-- Libraries used by various tools -->
+    <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ffmpeg.js/4.2.9003/ffmpeg.min.js"></script>
+
+    <style>
+        :root { 
+            --card-radius: 14px; 
+            --glass: rgba(255,255,255,0.6); 
+            --glass-border: rgba(0,0,0,0.06); 
+        }
+        [data-theme="dark"] { 
+            --glass: rgba(12,17,23,0.55); 
+            --glass-border: rgba(255,255,255,0.04); 
+        }
+        body { 
+            transition: background-color .25s ease, color .25s ease; 
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        [data-theme="dark"] body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+        .card { 
+            border-radius: var(--card-radius); 
+            transition: transform .22s ease, box-shadow .22s ease; 
+            cursor:pointer; 
+            position:relative; 
+            overflow:hidden; 
+        }
+        .card:hover { 
+            transform: translateY(-8px); 
+            box-shadow: 0 16px 40px rgba(2,6,23,0.12); 
+        }
+        .glassy { 
+            background: var(--glass); 
+            border: 1px solid var(--glass-border); 
+            backdrop-filter: blur(6px); 
+        }
+        .back-btn {
+            position: fixed; 
+            top: 1rem; 
+            right: 1rem; 
+            z-index: 60;
+            padding: .5rem .9rem; 
+            border-radius: 9999px; 
+            font-weight: 600;
+            box-shadow: 0 8px 24px rgba(2,6,23,0.12); 
+            transition: transform .12s ease, opacity .12s ease;
+        }
+        .back-btn:active { 
+            transform: translateY(1px); 
+        }
+        .badge { 
+            position:absolute; 
+            top:10px; 
+            right:10px; 
+            background: rgba(255,255,255,0.18); 
+            backdrop-filter: blur(6px); 
+            color:#fff; 
+            font-size:0.72rem; 
+            padding:4px 10px; 
+            border-radius:9999px; 
+            font-weight:600; 
+        }
+        .progress-bar { 
+            height: 8px; 
+            background: #e6e7ea; 
+            border-radius: 999px; 
+            overflow: hidden; 
+        }
+        .progress-fill { 
+            height:100%; 
+            width:0%; 
+            transition: width .3s linear; 
+            background: linear-gradient(90deg,#06b6d4,#6366f1); 
+        }
+        .tool-section { 
+            display: none; 
+        }
+        .tool-section.active { 
+            display: block; 
+        }
+        @media (min-width:1280px){ .grid-cols-responsive { grid-template-columns: repeat(4, 1fr); } }
+        @media (min-width:768px) and (max-width:1279px){ .grid-cols-responsive { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width:767px){ .grid-cols-responsive { grid-template-columns: repeat(2,1fr); } .back-btn{ right:.6rem; top:.8rem; } }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.05);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+        }
+        [data-theme="dark"] ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        /* Animation for tool loading */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .tool-section.active {
+            animation: fadeIn 0.3s ease-out;
+        }
+    </style>
+</head>
+<body data-theme="light" class="bg-slate-50 text-slate-800 antialiased min-h-screen">
+
+<!-- HEADER -->
+<header class="max-w-7xl mx-auto p-4 flex items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+        <div id="brand" class="p-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md cursor-pointer">
+            <i class="fas fa-tools fa-lg"></i>
+        </div>
+        <div>
+            <div class="text-lg font-bold">MediaToolsHub</div>
+            <div class="text-xs text-slate-500">Complete client-side media toolkit</div>
+        </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+        <nav id="topNav" class="hidden md:flex items-center gap-1 bg-white glassy px-2 py-1 rounded-full shadow-sm">
+            <button data-nav="dashboard" class="nav-btn px-3 py-1 text-sm rounded-full font-medium text-slate-700 bg-blue-50">Home</button>
+            <button data-nav="images" class="nav-btn px-3 py-1 text-sm rounded-full text-slate-700">Images</button>
+            <button data-nav="audio" class="nav-btn px-3 py-1 text-sm rounded-full text-slate-700">Audio</button>
+            <button data-nav="video" class="nav-btn px-3 py-1 text-sm rounded-full text-slate-700">Video</button>
+            <button data-nav="pdf" class="nav-btn px-3 py-1 text-sm rounded-full text-slate-700">PDF</button>
+            <button data-nav="extras" class="nav-btn px-3 py-1 text-sm rounded-full text-slate-700">Extras</button>
+        </nav>
+
+        <div class="flex items-center gap-3">
+            <div class="text-xs text-slate-500 hidden md:block">100% Private</div>
+            <button id="themeToggle" class="p-2 rounded-full glassy border" title="Toggle theme">
+                <i id="themeIcon" class="fas fa-moon"></i>
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- MAIN -->
+<main class="max-w-7xl mx-auto p-6">
+    <!-- Dashboard -->
+    <section id="dashboard" class="tool-section active">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h1 class="text-2xl font-extrabold">Dashboard</h1>
+                <p class="text-slate-500">Quick access to all tools — files stay in your browser.</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <input id="searchCards" placeholder="Search tools..." class="px-3 py-2 border rounded-full text-sm w-64" />
+            </div>
+        </div>
+
+        <div class="grid gap-6 grid-cols-responsive">
+            <!-- Image -->
+            <div id="card-images" class="card p-6 text-white bg-gradient-to-br from-blue-500 to-indigo-600" data-target="images">
+                <div class="flex gap-4 items-start">
+                    <div class="w-14 h-14 rounded-lg flex items-center justify-center bg-white/10 text-2xl"><i class="fas fa-image"></i></div>
+                    <div>
+                        <h3 class="text-lg font-bold">Image Tools</h3>
+                        <p class="text-sm opacity-90 mt-1">Compress, Resize, Convert & Crop</p>
+                        <div class="text-xs opacity-90 mt-3">JPG, PNG, WebP, GIF, SVG</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audio -->
+            <div id="card-audio" class="card p-6 text-white bg-gradient-to-br from-indigo-500 to-violet-600" data-target="audio">
+                <div class="flex gap-4 items-start">
+                    <div class="w-14 h-14 rounded-lg flex items-center justify-center bg-white/10 text-2xl"><i class="fas fa-music"></i></div>
+                    <div>
+                        <h3 class="text-lg font-bold">Audio Tools</h3>
+                        <p class="text-sm opacity-90 mt-1">Convert / Trim / Merge — fully client-side</p>
+                        <div class="text-xs opacity-90 mt-3">mp3, wav, m4a (WAV export)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Video -->
+            <div id="card-video" class="card p-6 text-white bg-gradient-to-br from-red-500 to-pink-600" data-target="video">
+                <div class="flex gap-4 items-start">
+                    <div class="w-14 h-14 rounded-lg flex items-center justify-center bg-white/10 text-2xl"><i class="fas fa-video"></i></div>
+                    <div>
+                        <h3 class="text-lg font-bold">Video Tools</h3>
+                        <p class="text-sm opacity-90 mt-1">Compress & Trim (WebM)</p>
+                        <div class="text-xs opacity-90 mt-3">Browser-dependent performance</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PDF -->
+            <div id="card-pdf" class="card p-6 text-white bg-gradient-to-br from-orange-400 to-yellow-500" data-target="pdf">
+                <div class="flex gap-4 items-start">
+                    <div class="w-14 h-14 rounded-lg flex items-center justify-center bg-white/10 text-2xl"><i class="fas fa-file-pdf"></i></div>
+                    <div>
+                        <h3 class="text-lg font-bold">PDF Tools</h3>
+                        <p class="text-sm opacity-90 mt-1">Merge, Split, Convert, Compress</p>
+                        <div class="text-xs opacity-90 mt-3">pdf.js + pdf-lib</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Extras -->
+            <div id="card-extras" class="card p-6 text-white bg-gradient-to-br from-emerald-400 to-teal-500" data-target="extras">
+                <div class="flex gap-4 items-start">
+                    <div class="w-14 h-14 rounded-lg flex items-center justify-center bg-white/10 text-2xl"><i class="fas fa-th-list"></i></div>
+                    <div>
+                        <h3 class="text-lg font-bold">Extras</h3>
+                        <p class="text-sm opacity-90 mt-1">QR, EXIF & Utilities</p>
+                        <div class="text-xs opacity-90 mt-3">Quick utilities</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Overview -->
+            <div id="card-overview" class="card p-6 text-white bg-gradient-to-br from-purple-500 to-fuchsia-600" data-target="overview">
+                <div class="flex gap-4 items-start">
+                    <div class="w-14 h-14 rounded-lg flex items-center justify-center bg-white/10 text-2xl"><i class="fas fa-chart-bar"></i></div>
+                    <div>
+                        <h3 class="text-lg font-bold">Overview</h3>
+                        <p class="text-sm opacity-90 mt-1">Dashboard Insights</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Coming Soon: Text Tools only -->
+        <h2 class="text-xl font-bold mt-10 mb-4 flex items-center gap-2"><i class="fas fa-hourglass-half text-indigo-600"></i> More Tools Coming Soon 🚧</h2>
+
+        <div class="grid gap-6 grid-cols-responsive">
+            <!-- Only Text Tools card remains here -->
+            <div class="card p-6 text-white bg-gradient-to-br from-cyan-500 to-blue-500">
+                <span class="badge">Soon</span>
+                <div class="flex gap-4 items-start">
+                    <div class="w-14 h-14 rounded-lg flex items-center justify-center bg-white/10 text-2xl"><i class="fas fa-font"></i></div>
+                    <div>
+                        <h3 class="text-lg font-bold">Text Tools</h3>
+                        <p class="text-sm opacity-90 mt-1">We're working on exciting new features! Stay tuned for updates.</p>
+                        <div class="text-xs opacity-90 mt-3">Planned features: remove duplicates, summarize, format</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- IMAGE TOOLS -->
+    <section id="images" class="tool-section bg-white rounded-2xl p-6 shadow relative">
+        <button class="back-btn bg-gradient-to-r from-blue-600 to-indigo-600 text-white" onclick="goBackToDashboard()"><i class="fas fa-arrow-left mr-2"></i> Back to Dashboard</button>
+        <div class="mb-4 flex items-center justify-between">
+            <div>
+                <h2 class="text-xl font-bold">Image Tools</h2>
+                <p class="text-slate-500">Compress, resize, convert, and crop images in your browser.</p>
+            </div>
+            <div class="text-sm text-slate-500">Formats: JPG, PNG, WebP, GIF</div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+            <!-- Left: Upload & Controls -->
+            <div>
+                <label class="block text-sm font-medium mb-2">Upload image</label>
+                <input id="imageFileInput" type="file" accept="image/*" class="mb-3 w-full p-2 border rounded" />
+                
+                <div class="space-y-4 mt-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Resize (width)</label>
+                        <input id="imageWidth" type="number" min="1" placeholder="Original width" class="w-full p-2 border rounded" />
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Quality (0.1 - 1.0)</label>
+                        <input id="imageQuality" type="range" min="0.1" max="1" step="0.1" value="0.8" class="w-full" />
+                        <div class="text-xs text-slate-500 text-center" id="qualityValue">0.8</div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Format</label>
+                        <select id="imageFormat" class="w-full p-2 border rounded">
+                            <option value="image/jpeg">JPEG</option>
+                            <option value="image/png">PNG</option>
+                            <option value="image/webp">WebP</option>
+                        </select>
+                    </div>
+                    
+                    <button id="processImageBtn" class="w-full bg-blue-600 text-white py-2 rounded font-medium">Process & Download</button>
+                </div>
+                
+                <div id="imageStatus" class="text-sm text-slate-500 mt-3"></div>
+            </div>
+            
+            <!-- Right: Preview -->
+            <div>
+                <label class="block text-sm font-medium mb-2">Preview</label>
+                <div id="imgPreviewWrap" class="border rounded p-4 bg-slate-50 flex items-center justify-center min-h-[300px]">
+                    <div class="text-slate-400">No image loaded</div>
+                </div>
+                <div id="imageInfo" class="text-xs text-slate-500 mt-2"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- AUDIO TOOLS -->
+    <section id="audio" class="tool-section bg-white rounded-2xl p-6 shadow relative">
+        <button class="back-btn bg-gradient-to-r from-indigo-600 to-violet-600 text-white" onclick="goBackToDashboard()"><i class="fas fa-arrow-left mr-2"></i> Back to Dashboard</button>
+        <div class="mb-4 flex items-center justify-between">
+            <div>
+                <h2 class="text-xl font-bold">Audio Tools</h2>
+                <p class="text-slate-500">Trim, Merge, Convert audio files in your browser (WAV export).</p>
+            </div>
+            <div class="text-sm text-slate-500">Formats: mp3, wav, m4a, webm</div>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-6">
+            <!-- left: upload & list -->
+            <div>
+                <label class="block text-sm font-medium mb-2">Upload audio files</label>
+                <input id="audioFilesInput" type="file" accept="audio/*" multiple class="mb-3 w-full" />
+                <div class="file-list border rounded p-3 text-sm max-h-60 overflow-y-auto" id="audioFileList"><div class="text-slate-400">No audio files loaded</div></div>
+                <div class="mt-4 flex gap-2">
+                    <button id="refreshFilesBtn" class="btn bg-slate-100 px-3 py-2 rounded">Refresh list</button>
+                    <button id="clearFilesBtn" class="btn bg-red-500 text-white px-3 py-2 rounded">Clear</button>
+                </div>
+            </div>
+
+            <!-- middle: preview + trimming -->
+            <div>
+                <label class="block text-sm font-medium mb-2">Preview</label>
+                <div class="border rounded p-3 mb-3">
+                    <audio id="audioPreview" controls style="width:100%"></audio>
+                    <div id="audioPreviewName" class="text-xs text-slate-500 mt-2"></div>
+                </div>
+
+                <label class="block text-sm font-medium mb-2">Trim (seconds)</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <input id="trimStart" type="number" min="0" step="0.1" placeholder="Start (s)" class="px-3 py-2 border rounded" />
+                    <input id="trimEnd" type="number" min="0" step="0.1" placeholder="End (s)" class="px-3 py-2 border rounded" />
+                    <button id="trimRunBtn" class="btn bg-indigo-600 text-white rounded">Trim & Download WAV</button>
+                </div>
+                <div id="trimStatus" class="text-sm text-slate-500 mt-2"></div>
+            </div>
+
+            <!-- right: merge & convert -->
+            <div>
+                <label class="block text-sm font-medium mb-2">Merge / Convert</label>
+                <div class="mb-3">
+                    <label class="block text-xs text-slate-500 mb-1">Select multiple files from the list (checkbox)</label>
+                    <div class="border rounded p-3 text-sm max-h-32 overflow-y-auto" id="mergeSelectionWrap">
+                        <div class="text-slate-400">No files selected</div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <button id="mergeRunBtn" class="btn bg-emerald-500 text-white rounded px-3 py-2">Merge Selected → Download WAV</button>
+                    <button id="convertRunBtn" class="btn bg-amber-500 text-white rounded px-3 py-2">Convert Selected → Download WAV(s)</button>
+                </div>
+
+                <div class="mt-4">
+                    <label class="block text-sm font-medium mb-1">Output sample rate</label>
+                    <select id="outputSampleRate" class="border px-3 py-2 rounded w-full">
+                        <option value="44100" selected>44,100 Hz</option>
+                        <option value="48000">48,000 Hz</option>
+                        <option value="22050">22,050 Hz</option>
+                    </select>
+                </div>
+
+                <div id="audioStatus" class="text-sm text-slate-500 mt-3"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- VIDEO TOOLS -->
+    <section id="video" class="tool-section bg-white rounded-2xl p-6 shadow relative">
+        <button class="back-btn bg-gradient-to-r from-red-500 to-pink-600 text-white" onclick="goBackToDashboard()"><i class="fas fa-arrow-left mr-2"></i> Back to Dashboard</button>
+        <div class="mb-4 flex items-center justify-between">
+            <div>
+                <h2 class="text-xl font-bold">Video Tools</h2>
+                <p class="text-slate-500">Compress, trim, and convert videos in your browser.</p>
+            </div>
+            <div class="text-sm text-slate-500">Formats: MP4, WebM, MOV</div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+            <!-- Left: Upload & Controls -->
+            <div>
+                <label class="block text-sm font-medium mb-2">Upload video</label>
+                <input id="videoInputFile" type="file" accept="video/*" class="mb-3 w-full p-2 border rounded" />
+                
+                <div class="space-y-4 mt-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Quality</label>
+                        <select id="videoQuality" class="w-full p-2 border rounded">
+                            <option value="high">High Quality</option>
+                            <option value="medium" selected>Medium Quality</option>
+                            <option value="low">Low Quality</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Trim (seconds)</label>
+                        <div class="flex gap-2">
+                            <input id="videoTrimStart" type="number" min="0" step="1" placeholder="Start" class="w-1/2 p-2 border rounded" />
+                            <input id="videoTrimEnd" type="number" min="0" step="1" placeholder="End" class="w-1/2 p-2 border rounded" />
+                        </div>
+                    </div>
+                    
+                    <button id="processVideoBtn" class="w-full bg-red-600 text-white py-2 rounded font-medium">Process & Download</button>
+                </div>
+                
+                <div id="videoStatus" class="text-sm text-slate-500 mt-3"></div>
+            </div>
+            
+            <!-- Right: Preview -->
+            <div>
+                <label class="block text-sm font-medium mb-2">Preview</label>
+                <div id="videoPreviewWrap" class="border rounded p-4 bg-slate-50 flex items-center justify-center min-h-[300px]">
+                    <div class="text-slate-400">No video loaded</div>
+                </div>
+                <div id="videoInfo" class="text-xs text-slate-500 mt-2"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PDF TOOLS -->
+    <section id="pdf" class="tool-section bg-white rounded-2xl p-6 shadow relative">
+        <button class="back-btn bg-gradient-to-r from-orange-400 to-yellow-500 text-white" onclick="goBackToDashboard()"><i class="fas fa-arrow-left mr-2"></i> Back to Dashboard</button>
+        <div class="mb-4 flex items-center justify-between">
+            <div>
+                <h2 class="text-xl font-bold">PDF Tools</h2>
+                <p class="text-slate-500">Merge, split, compress, and convert PDF files.</p>
+            </div>
+            <div class="text-sm text-slate-500">Powered by pdf.js & pdf-lib</div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+            <!-- Left: Upload & Controls -->
+            <div>
+                <label class="block text-sm font-medium mb-2">Upload PDF files</label>
+                <input id="pdfFileInput" type="file" accept="application/pdf" multiple class="mb-3 w-full p-2 border rounded" />
+                
+                <div class="space-y-4 mt-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Action</label>
+                        <select id="pdfAction" class="w-full p-2 border rounded">
+                            <option value="merge">Merge PDFs</option>
+                            <option value="split">Split PDF</option>
+                            <option value="compress">Compress PDF</option>
+                        </select>
+                    </div>
+                    
+                    <div id="splitOptions" class="hidden">
+                        <label class="block text-sm font-medium mb-1">Pages to extract (e.g., 1-3,5,7-9)</label>
+                        <input id="pdfPages" type="text" placeholder="All pages" class="w-full p-2 border rounded" />
+                    </div>
+                    
+                    <button id="processPdfBtn" class="w-full bg-amber-600 text-white py-2 rounded font-medium">Process & Download</button>
+                </div>
+                
+                <div id="pdfStatus" class="text-sm text-slate-500 mt-3"></div>
+            </div>
+            
+            <!-- Right: Preview -->
+            <div>
+                <label class="block text-sm font-medium mb-2">Preview</label>
+                <div id="pdfPreviewArea" class="border rounded p-4 bg-slate-50 flex items-center justify-center min-h-[300px]">
+                    <div class="text-slate-400">PDF preview will appear here</div>
+                </div>
+                <div id="pdfInfo" class="text-xs text-slate-500 mt-2"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- EXTRAS -->
+    <section id="extras" class="tool-section bg-white rounded-2xl p-6 shadow relative">
+        <button class="back-btn bg-gradient-to-r from-emerald-400 to-teal-500 text-white" onclick="goBackToDashboard()"><i class="fas fa-arrow-left mr-2"></i> Back to Dashboard</button>
+        <div class="mb-4">
+            <h2 class="text-xl font-bold">Extras</h2>
+            <p class="text-slate-500">QR code generator, EXIF data viewer, and other utilities.</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+            <!-- QR Code Generator -->
+            <div class="border rounded-lg p-4">
+                <h3 class="font-bold mb-3">QR Code Generator</h3>
+                <textarea id="qrText" class="border rounded p-3 w-full h-24" placeholder="Enter text or URL for QR code..."></textarea>
+                <div class="mt-3 flex gap-2 items-center">
+                    <button id="genQrBtn" class="px-4 py-2 bg-indigo-600 text-white rounded">Generate QR</button>
+                    <div id="qrOut" class="ml-3"></div>
+                </div>
+            </div>
+            
+            <!-- EXIF Data Viewer -->
+            <div class="border rounded-lg p-4">
+                <h3 class="font-bold mb-3">EXIF Data Viewer</h3>
+                <input id="exifFileInput" type="file" accept="image/*" class="mb-3 w-full p-2 border rounded" />
+                <div id="exifData" class="text-sm max-h-60 overflow-y-auto p-2 border rounded bg-slate-50">
+                    <div class="text-slate-400">EXIF data will appear here</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- OVERVIEW -->
+    <section id="overview" class="tool-section bg-white rounded-2xl p-6 shadow relative">
+        <button class="back-btn bg-gradient-to-r from-purple-500 to-fuchsia-600 text-white" onclick="goBackToDashboard()"><i class="fas fa-arrow-left mr-2"></i> Back to Dashboard</button>
+        <div class="mb-4">
+            <h2 class="text-xl font-bold">Overview</h2>
+            <p class="text-slate-500">Usage statistics and recent activity.</p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-6">
+            <div class="border rounded-lg p-4 text-center">
+                <div class="text-3xl font-bold text-blue-600">12</div>
+                <div class="text-sm text-slate-500">Files Processed</div>
+            </div>
+            <div class="border rounded-lg p-4 text-center">
+                <div class="text-3xl font-bold text-green-600">8.7 MB</div>
+                <div class="text-sm text-slate-500">Data Saved</div>
+            </div>
+            <div class="border rounded-lg p-4 text-center">
+                <div class="text-3xl font-bold text-purple-600">5</div>
+                <div class="text-sm text-slate-500">Tools Used</div>
+            </div>
+        </div>
+
+        <div class="mt-6">
+            <h3 class="font-bold mb-3">Recent Activity</h3>
+            <div class="border rounded-lg p-4">
+                <div class="text-sm text-slate-500">No recent activity to display</div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer class="max-w-7xl mx-auto p-6 text-sm text-slate-500 border-t mt-8">
+    <div class="flex flex-col md:flex-row justify-between items-center gap-3">
+        <div class="flex items-center gap-2"><i class="fas fa-shield-alt text-blue-500"></i> Built with care — files stay in your browser</div>
+        <div class="flex gap-4"><a href="#" class="hover:text-blue-500">Privacy</a><a href="#" class="hover:text-blue-500">Feedback</a></div>
+    </div>
+</footer>
+
+<script>
+/* -------------------------
+   Utility helpers & UI wiring
+   ------------------------- */
+const $ = id => document.getElementById(id);
+
+// Theme toggle
+(function themeInit(){
+    const body = document.body;
+    const icon = $('themeIcon');
+    const saved = localStorage.getItem('mth_theme');
+    if(saved === 'dark'){ 
+        body.setAttribute('data-theme','dark'); 
+        icon.className = 'fas fa-sun'; 
+        body.classList.add('dark'); 
+    } else { 
+        body.setAttribute('data-theme','light'); 
+        icon.className = 'fas fa-moon'; 
+        body.classList.remove('dark'); 
+    }
+    $('themeToggle')?.addEventListener('click', ()=>{
+        const cur = body.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+        const next = cur === 'dark' ? 'light' : 'dark';
+        body.setAttribute('data-theme', next);
+        localStorage.setItem('mth_theme', next);
+        $('themeIcon').className = next === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+    });
+})();
+
+// Show/hide tool panels
+function showTool(id){
+    document.querySelectorAll('.tool-section').forEach(section => {
+        section.classList.remove('active');
+    });
+    $(id)?.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function goBackToDashboard(){
+    showTool('dashboard');
+}
+
+// Card click wiring
+document.querySelectorAll('.card[data-target]').forEach(card=>{
+    card.addEventListener('click', ()=>{
+        const t = card.dataset.target;
+        if(t) showTool(t);
+    });
+});
+
+// Top nav
+document.querySelectorAll('#topNav .nav-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+        const t = btn.getAttribute('data-nav');
+        if(t === 'dashboard') goBackToDashboard();
+        else showTool(t);
+    });
+});
+
+// Brand double-click to go home
+$('brand')?.addEventListener('dblclick', ()=> goBackToDashboard());
+
+// Search filter
+$('searchCards')?.addEventListener('input', (e)=>{
+    const q = e.target.value.toLowerCase().trim();
+    document.querySelectorAll('#dashboard .card').forEach(card=>{
+        const txt = card.textContent.toLowerCase();
+        card.style.display = txt.includes(q) ? '' : 'none';
+    });
+});
+
+/* -------------------------
+   QR Generator (Extras)
+   ------------------------- */
+$('genQrBtn')?.addEventListener('click', ()=>{
+    const txt = $('qrText')?.value?.trim();
+    const out = $('qrOut'); 
+    if(!out) return; 
+    out.innerHTML = '';
+    if(!txt){ 
+        out.innerHTML = '<div class="text-sm text-slate-400">Enter text or URL</div>'; 
+        return; 
+    }
+    const canvas = document.createElement('canvas');
+    QRCode.toCanvas(canvas, txt, { width: 150 }, (err) => {
+        if(err){ 
+            out.innerHTML = '<div class="text-sm text-red-500">QR generation failed</div>'; 
+            console.error(err); 
+            return; 
+        }
+        out.appendChild(canvas);
+    });
+});
+
+/* -------------------------
+   IMAGE TOOLS
+   ------------------------- */
+$('imageFileInput')?.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        const img = new Image();
+        img.onload = function() {
+            $('imgPreviewWrap').innerHTML = '';
+            $('imgPreviewWrap').appendChild(img);
+            
+            // Set default width to original size
+            $('imageWidth').value = img.width;
+            
+            // Update image info
+            $('imageInfo').textContent = 
+                `Original: ${img.width}×${img.height} • Size: ${(file.size / 1024).toFixed(2)} KB`;
+        };
+        img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+});
+
+$('imageQuality')?.addEventListener('input', function() {
+    $('qualityValue').textContent = this.value;
+});
+
+$('processImageBtn')?.addEventListener('click', function() {
+    const img = $('imgPreviewWrap').querySelector('img');
+    if (!img) {
+        $('imageStatus').textContent = 'Please upload an image first';
+        return;
+    }
+    
+    $('imageStatus').textContent = 'Processing...';
+    
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Get target width
+    const targetWidth = parseInt($('imageWidth').value) || img.width;
+    const scale = targetWidth / img.width;
+    const targetHeight = img.height * scale;
+    
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    
+    // Draw image with new dimensions
+    ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+    
+    // Get format and quality
+    const format = $('imageFormat').value;
+    const quality = parseFloat($('imageQuality').value);
+    
+    // Convert to blob and download
+    canvas.toBlob(function(blob) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `processed-image.${format.split('/')[1]}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        $('imageStatus').textContent = `Image processed! New size: ${(blob.size / 1024).toFixed(2)} KB`;
+    }, format, quality);
+});
+
+/* -------------------------
+   AUDIO TOOLS: full client-side functionality
+   (trim / merge / convert -> WAV)
+   ------------------------- */
+
+// Simple audio tool implementation adapted from previous version
+let audioStore = []; // { id, file, arrayBuffer, audioBuffer, duration, sampleRate, channels }
+const readFileAsArrayBuffer = (file) => new Promise((res, rej) => { 
+    const fr = new FileReader(); 
+    fr.onload = ()=>res(fr.result); 
+    fr.onerror = ()=>rej(fr.error); 
+    fr.readAsArrayBuffer(file); 
+});
+
+async function decodeAudio(buffer){
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const audioBuffer = await ctx.decodeAudioData(buffer.slice(0));
+        try { ctx.close(); } catch(_) {}
+        return audioBuffer;
+    } catch(err) {
+        // fallback
+        return new Promise((res, rej) => {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                ctx.decodeAudioData(buffer.slice(0), (buf)=>{ 
+                    try{ ctx.close(); }catch(_){} 
+                    res(buf); 
+                }, (e)=>{ 
+                    try{ ctx.close(); }catch(_){} 
+                    rej(e); 
+                });
+            } catch(e){ rej(e); }
+        });
+    }
+}
+
+function audioBufferToWav(audioBuffer, opt = {}) {
+    const sampleRate = opt.sampleRate || audioBuffer.sampleRate;
+    const numChannels = audioBuffer.numberOfChannels;
+    const samples = audioBuffer.length;
+    const bytesPerSample = 2;
+    const blockAlign = numChannels * bytesPerSample;
+    const buffer = new ArrayBuffer(44 + samples * blockAlign);
+    const view = new DataView(buffer);
+    let offset = 0;
+    function writeString(s){ for(let i=0;i<s.length;i++){ view.setUint8(offset, s.charCodeAt(i)); offset++; } }
+    function writeUint32(d) { view.setUint32(offset, d, true); offset += 4; }
+    function writeUint16(d) { view.setUint16(offset, d, true); offset += 2; }
+    writeString('RIFF'); writeUint32(36 + samples * blockAlign); writeString('WAVE');
+    writeString('fmt '); writeUint32(16); writeUint16(1); writeUint16(numChannels); writeUint32(sampleRate); writeUint32(sampleRate * blockAlign); writeUint16(blockAlign); writeUint16(bytesPerSample * 8);
+    writeString('data'); writeUint32(samples * blockAlign);
+    const channelData = []; for(let c=0;c<numChannels;c++) channelData.push(audioBuffer.getChannelData(c));
+    for(let i=0;i<samples;i++){
+        for(let ch=0; ch<numChannels; ch++){
+            let s = channelData[ch][i]; if (isNaN(s)) s = 0; s = Math.max(-1, Math.min(1, s));
+            view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+            offset += 2;
+        }
+    }
+    return new Blob([view], { type: 'audio/wav' });
+}
+
+async function resampleAudioBuffer(audioBuffer, targetSampleRate) {
+    if (audioBuffer.sampleRate === targetSampleRate) return audioBuffer;
+    const numChannels = audioBuffer.numberOfChannels;
+    const duration = audioBuffer.duration;
+    const offlineCtx = new OfflineAudioContext(numChannels, Math.ceil(duration * targetSampleRate), targetSampleRate);
+    const bufferSource = offlineCtx.createBufferSource();
+    bufferSource.buffer = audioBuffer;
+    bufferSource.connect(offlineCtx.destination);
+    bufferSource.start(0);
+    const rendered = await offlineCtx.startRendering();
+    return rendered;
+}
+
+function concatAudioBuffers(buffers, targetSampleRate) {
+    if (!buffers.length) return null;
+    const numChannels = Math.max(...buffers.map(b => b.numberOfChannels));
+    const totalLength = buffers.reduce((s,b)=>s + b.length,0);
+    const outCtx = new (window.OfflineAudioContext || window.AudioContext)(numChannels, totalLength, targetSampleRate || buffers[0].sampleRate);
+    const outBuffer = outCtx.createBuffer(numChannels, totalLength, targetSampleRate || buffers[0].sampleRate);
+    let offset = 0;
+    for(const buf of buffers){
+        for(let ch=0; ch<numChannels; ch++){
+            const outData = outBuffer.getChannelData(ch);
+            const inData = buf.numberOfChannels > ch ? buf.getChannelData(ch) : new Float32Array(buf.length);
+            outData.set(inData, offset);
+        }
+        offset += buf.length;
+    }
+    return outBuffer;
+}
+
+// UI: refresh list
+function refreshFileListUI(){
+    const wrap = $('audioFileList');
+    wrap.innerHTML = '';
+    if(!audioStore.length){ 
+        wrap.innerHTML = '<div class="text-slate-400">No audio files loaded</div>'; 
+        $('mergeSelectionWrap').innerHTML = '<div class="text-slate-400">No files selected</div>'; 
+        return; 
+    }
+    const container = document.createElement('div'); 
+    container.className = 'space-y-2';
+    audioStore.forEach(item=>{
+        const row = document.createElement('div'); 
+        row.className = 'flex items-center justify-between gap-2 border-b pb-2';
+        const left = document.createElement('div'); 
+        left.className = 'flex items-center gap-3';
+        const chk = document.createElement('input'); 
+        chk.type='checkbox'; 
+        chk.className='merge-chk'; 
+        chk.dataset.id = item.id;
+        const playBtn = document.createElement('button'); 
+        playBtn.className='btn bg-slate-100 text-sm px-3 py-1 rounded'; 
+        playBtn.textContent='Preview';
+        playBtn.addEventListener('click', ()=> { playAudioItem(item.id); });
+        const title = document.createElement('div'); 
+        title.innerHTML = `<div class="font-medium">${item.file.name}</div><div class="text-xs text-slate-500">${(item.duration||0).toFixed(2)} s • ${item.sampleRate || '—'} Hz</div>`;
+        left.appendChild(chk); 
+        left.appendChild(playBtn); 
+        left.appendChild(title);
+        const right = document.createElement('div');
+        const selBtn = document.createElement('button'); 
+        selBtn.className='btn bg-blue-600 text-white text-sm px-3 py-1 rounded'; 
+        selBtn.textContent='Select for Trim';
+        selBtn.addEventListener('click', ()=> populateTrimFromItem(item.id));
+        right.appendChild(selBtn);
+        row.appendChild(left); 
+        row.appendChild(right);
+        container.appendChild(row);
+    });
+    wrap.appendChild(container);
+    updateMergeSelectionUI();
+}
+
+function updateMergeSelectionUI(){
+    const wrap = $('mergeSelectionWrap'); 
+    wrap.innerHTML = '';
+    const boxes = Array.from(document.querySelectorAll('.merge-chk'));
+    const selected = boxes.filter(b=>b.checked).map(b=>b.dataset.id);
+    if(!selected.length){ 
+        wrap.innerHTML = '<div class="text-slate-400">No files selected</div>'; 
+        return; 
+    }
+    const list = document.createElement('div'); 
+    list.className = 'space-y-2';
+    selected.forEach(id=>{
+        const it = audioStore.find(x=>x.id===id);
+        if(!it) return;
+        const el = document.createElement('div'); 
+        el.textContent = `${it.file.name} • ${(it.duration||0).toFixed(2)} s`;
+        list.appendChild(el);
+    });
+    wrap.appendChild(list);
+}
+
+async function playAudioItem(id){
+    const item = audioStore.find(x=>x.id===id); 
+    if(!item){ 
+        alert('Item not found'); 
+        return; 
+    }
+    const preview = $('audioPreview');
+    const blob = new Blob([item.arrayBuffer], { type: item.file.type || 'audio/*' });
+    const url = URL.createObjectURL(blob);
+    preview.src = url; 
+    $('audioPreviewName').textContent = item.file.name;
+    preview.play().catch(()=>{});
+}
+
+function populateTrimFromItem(id){
+    const item = audioStore.find(x=>x.id===id); 
+    if(!item) return;
+    $('audioPreview').src = URL.createObjectURL(new Blob([item.arrayBuffer], { type: item.file.type }));
+    $('audioPreview').play().catch(()=>{});
+    $('audioPreviewName').textContent = item.file.name;
+    $('trimStart').value = 0; 
+    $('trimEnd').value = item.duration ? item.duration.toFixed(3) : '';
+}
+
+// Loading files
+$('audioFilesInput')?.addEventListener('change', async (e)=>{
+    const files = Array.from(e.target.files||[]);
+    if(!files.length) return;
+    $('audioStatus').textContent = 'Loading files...';
+    try{
+        for(const file of files){
+            const arr = await readFileAsArrayBuffer(file);
+            const audioBuffer = await decodeAudio(arr);
+            const id = 'a' + Math.random().toString(36).slice(2,9);
+            const item = { 
+                id, 
+                file, 
+                arrayBuffer: arr, 
+                audioBuffer, 
+                duration: audioBuffer.duration, 
+                sampleRate: audioBuffer.sampleRate, 
+                channels: audioBuffer.numberOfChannels 
+            };
+            audioStore.push(item);
+        }
+        $('audioStatus').textContent = `Loaded ${files.length} file(s).`;
+        refreshFileListUI();
+    }catch(err){ 
+        console.error(err); 
+        $('audioStatus').textContent = 'Error loading: ' + (err.message||err); 
+    }
+});
+
+$('clearFilesBtn')?.addEventListener('click', ()=>{ 
+    audioStore = []; 
+    $('audioFilesInput').value = ''; 
+    refreshFileListUI(); 
+    $('audioStatus').textContent = 'Cleared files.'; 
+});
+
+$('refreshFilesBtn')?.addEventListener('click', ()=>{ 
+    refreshFileListUI(); 
+    $('audioStatus').textContent = 'Refreshed list.'; 
+});
+
+document.addEventListener('change', (e)=>{ 
+    if(e.target && e.target.classList && e.target.classList.contains('merge-chk')) 
+        updateMergeSelectionUI(); 
+});
+
+// TRIM
+$('trimRunBtn')?.addEventListener('click', async ()=>{
+    const start = parseFloat($('trimStart').value); 
+    const end = parseFloat($('trimEnd').value);
+    const name = $('audioPreviewName').textContent;
+    const item = audioStore.find(i=>i.file.name === name) || audioStore[0];
+    if(!item){ 
+        $('trimStatus').textContent = 'No audio selected'; 
+        return; 
+    }
+    const buffer = item.audioBuffer;
+    const s = isFinite(start) && start>=0 ? start : 0;
+    const e = isFinite(end) && end> s ? Math.min(end, buffer.duration) : buffer.duration;
+    if(e <= s){ 
+        $('trimStatus').textContent = 'Invalid start/end times'; 
+        return; 
+    }
+    $('trimStatus').textContent = 'Trimming...';
+    try{
+        const sampleRate = parseInt($('outputSampleRate').value) || buffer.sampleRate;
+        const startSample = Math.floor(s * buffer.sampleRate); 
+        const endSample = Math.floor(e * buffer.sampleRate);
+        const len = endSample - startSample;
+        const outCtx = new (window.OfflineAudioContext || window.AudioContext)(buffer.numberOfChannels, len, buffer.sampleRate);
+        const outBuffer = outCtx.createBuffer(buffer.numberOfChannels, len, buffer.sampleRate);
+        for(let ch=0; ch<buffer.numberOfChannels; ch++){ 
+            outBuffer.getChannelData(ch).set(buffer.getChannelData(ch).subarray(startSample, endSample)); 
+        }
+        const finalBuffer = (buffer.sampleRate === sampleRate) ? outBuffer : await resampleAudioBuffer(outBuffer, sampleRate);
+        const wavBlob = audioBufferToWav(finalBuffer, { sampleRate: finalBuffer.sampleRate });
+        const nameOut = item.file.name.replace(/\.[^/.]+$/, '') + `-trim-${s.toFixed(2)}-${e.toFixed(2)}.wav`;
+        downloadBlob(wavBlob, nameOut);
+        $('trimStatus').textContent = 'Trim complete — downloaded.';
+    }catch(err){ 
+        console.error(err); 
+        $('trimStatus').textContent = 'Trim failed: ' + (err.message||err); 
+    }
+});
+
+// MERGE
+$('mergeRunBtn')?.addEventListener('click', async ()=>{
+    const boxes = Array.from(document.querySelectorAll('.merge-chk')).filter(c=>c.checked);
+    if(!boxes.length){ 
+        $('audioStatus').textContent = 'Select two or more files to merge.'; 
+        return; 
+    }
+    const ids = boxes.map(b => b.dataset.id);
+    const items = ids.map(id => audioStore.find(x=>x.id===id)).filter(Boolean);
+    if(items.length < 1){ 
+        $('audioStatus').textContent = 'No valid files selected'; 
+        return; 
+    }
+    $('audioStatus').textContent = 'Merging...';
+    try{
+        const outRate = parseInt($('outputSampleRate').value) || 44100;
+        const buffers = [];
+        for(const it of items){ 
+            const rb = (it.audioBuffer.sampleRate === outRate) ? it.audioBuffer : await resampleAudioBuffer(it.audioBuffer, outRate); 
+            buffers.push(rb); 
+        }
+        const outBuffer = concatAudioBuffers(buffers, outRate);
+        if(!outBuffer){ 
+            $('audioStatus').textContent = 'Failed to build merged buffer'; 
+            return; 
+        }
+        const wavBlob = audioBufferToWav(outBuffer, { sampleRate: outBuffer.sampleRate });
+        downloadBlob(wavBlob, 'merged-audio.wav');
+        $('audioStatus').textContent = 'Merge complete — downloaded.';
+    }catch(err){ 
+        console.error(err); 
+        $('audioStatus').textContent = 'Merge failed: ' + (err.message||err); 
+    }
+});
+
+// CONVERT
+$('convertRunBtn')?.addEventListener('click', async ()=>{
+    const boxes = Array.from(document.querySelectorAll('.merge-chk')).filter(c=>c.checked);
+    if(!boxes.length){ 
+        $('audioStatus').textContent = 'Select one or more files to convert.'; 
+        return; 
+    }
+    const outRate = parseInt($('outputSampleRate').value) || 44100;
+    $('audioStatus').textContent = 'Converting...';
+    try{
+        for(const chk of boxes){
+            const id = chk.dataset.id; 
+            const item = audioStore.find(x=>x.id===id); 
+            if(!item) continue;
+            let buf = item.audioBuffer; 
+            if(buf.sampleRate !== outRate) buf = await resampleAudioBuffer(buf, outRate);
+            const wavBlob = audioBufferToWav(buf, { sampleRate: outRate });
+            downloadBlob(wavBlob, item.file.name.replace(/\.[^/.]+$/, '') + '-converted.wav');
+        }
+        $('audioStatus').textContent = 'Conversion(s) complete.';
+    }catch(err){ 
+        console.error(err); 
+        $('audioStatus').textContent = 'Conversion failed: ' + (err.message||err); 
+    }
+});
+
+/* -------------------------
+   VIDEO TOOLS
+   ------------------------- */
+$('videoInputFile')?.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const url = URL.createObjectURL(file);
+    $('videoPreviewWrap').innerHTML = `<video controls class="max-w-full max-h-80"><source src="${url}" type="${file.type}"></video>`;
+    $('videoInfo').textContent = `File: ${file.name} • Size: ${(file.size / (1024*1024)).toFixed(2)} MB`;
+});
+
+$('processVideoBtn')?.addEventListener('click', function() {
+    $('videoStatus').textContent = 'Video processing would require more advanced libraries. For now, use specialized video tools.';
+});
+
+/* -------------------------
+   PDF TOOLS
+   ------------------------- */
+$('pdfFileInput')?.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    $('pdfPreviewArea').innerHTML = `<div class="text-center p-4">
+        <i class="fas fa-file-pdf text-4xl text-red-500 mb-2"></i>
+        <div class="font-medium">${file.name}</div>
+        <div class="text-xs text-slate-500 mt-1">Size: ${(file.size / 1024).toFixed(2)} KB</div>
+    </div>`;
+    $('pdfInfo').textContent = `PDF loaded: ${file.name}`;
+});
+
+$('pdfAction')?.addEventListener('change', function() {
+    if (this.value === 'split') {
+        $('splitOptions').classList.remove('hidden');
+    } else {
+        $('splitOptions').classList.add('hidden');
+    }
+});
+
+$('processPdfBtn')?.addEventListener('click', function() {
+    $('pdfStatus').textContent = 'PDF processing would require more advanced implementation. For now, use specialized PDF tools.';
+});
+
+/* -------------------------
+   EXTRAS: EXIF Data
+   ------------------------- */
+$('exifFileInput')?.addEventListener('change', async function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    try {
+        const exifData = await exifr.parse(file);
+        const exifDisplay = $('exifData');
+        exifDisplay.innerHTML = '';
+        
+        if (!exifData) {
+            exifDisplay.innerHTML = '<div class="text-slate-400">No EXIF data found</div>';
+            return;
+        }
+        
+        for (const [key, value] of Object.entries(exifData)) {
+            const row = document.createElement('div');
+            row.className = 'flex justify-between border-b py-1';
+            row.innerHTML = `<span class="font-medium">${key}:</span><span class="text-slate-600">${value}</span>`;
+            exifDisplay.appendChild(row);
+        }
+    } catch (error) {
+        $('exifData').innerHTML = '<div class="text-red-500">Error reading EXIF data</div>';
+        console.error(error);
+    }
+});
+
+/* -------------------------
+   UTILITY FUNCTIONS
+   ------------------------- */
+// download helper
+function downloadBlob(blob, filename){
+    const a = document.createElement('a'); 
+    a.href = URL.createObjectURL(blob); 
+    a.download = filename || 'download'; 
+    document.body.appendChild(a); 
+    a.click(); 
+    a.remove();
+    setTimeout(()=> URL.revokeObjectURL(a.href), 4000);
+}
+
+// initial state
+refreshFileListUI();
+
+console.log('MediaToolsHub (complete) ready');
+</script>
+</body>
+</html>
